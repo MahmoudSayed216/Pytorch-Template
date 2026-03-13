@@ -235,7 +235,7 @@ def train(train_loader: DataLoader, test_loader: DataLoader, configs: dict, sess
 
 
     cp_handler = CheckpointsHandler(save_every=SAVE_EVERY, increasing_metric=True, output_path=weights_saving_path)
-    model = SimpleCNN(train_configs=configs, shared_configs=configs).to(DEVICE)
+    model = SimpleCNN().to(DEVICE)
     optim = Adam(params=model.parameters(), lr=LEARNING_RATE)
     scheduler = StepLR(optimizer=optim, step_size=LR_REDUCE_AFTER, gamma=LR_REDUCTION_FACTOR)
     loss_fn = BCEWithLogitsLoss()
