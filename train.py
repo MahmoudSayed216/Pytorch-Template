@@ -158,7 +158,6 @@ def log_configs(logger, session_path, configs):
     logger.log("session path: ", session_path, end="\n\n")
 
 
-#TODO: implement this function
 def create_data_loaders(dataset_path: str, configs: dict) -> tuple[DataLoader, DataLoader]:
 
     train_transforms = transforms.Compose([
@@ -196,8 +195,8 @@ def create_data_loaders(dataset_path: str, configs: dict) -> tuple[DataLoader, D
 
     print(f"Train samples: {len(train_samples)}, Test samples: {len(test_samples)}")
 
-    train_ds = CatDogDataset(train_samples ,transforms=train_transforms)
-    test_ds = CatDogDataset(test_samples, transforms=test_transform)
+    train_ds = CatDogDataset(train_samples ,transform=train_transforms)
+    test_ds = CatDogDataset(test_samples, transform=test_transform)
 
     device = configs["device"]
     
