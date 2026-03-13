@@ -211,8 +211,45 @@ def create_data_loaders(dataset_path: str, configs: dict) -> tuple[DataLoader, D
 
 #TODO: implement this function
 #* Move to test.py
-def compute_test_metrics(model, loss_fn, device, test_loader, mx) -> tuple[float, float]:
-    pass
+import torch
+
+def compute_test_metrics(model, loss_fn, device, test_loader, train_loader=None):
+    model.eval()
+    test_loss = 0
+    correct_test = 0
+    total_test = 0
+
+    with torch.no_grad():
+        for imgs, labels in test_loader:
+            imgs = imgs.to(device)
+            labels = labels.to(device).float().unsqueeze(1)
+
+            output = model(imgs)
+            loss = loss_fn(output, labels)
+            test_loss += loss.item() * imgs.size(0)  # multiply by batch size
+
+            pred = (torch.sigmoid(output) > 0.5).float()
+            correct_test += (pred == labels).sum().item()
+            total_test += imgs.size(0)
+
+    test_loss /= total_test
+    test_accuracy = correct_test / total_test
+
+    train_accuracy = None
+    if train_loader is not None:
+        correct_train = 0
+        total_train = 0
+        with torch.no_grad():
+            for imgs, labels in train_loader:
+                imgs = imgs.to(device)
+                labels = labels.to(device).float().unsqueeze(1)
+                output = model(imgs)
+                pred = (torch.sigmoid(output) > 0.5).float()
+                correct_train += (pred == labels).sum().item()
+                total_train += imgs.size(0)
+        train_accuracy = correct_train / total_train
+
+    return test_loss, test_accuracy, train_accuracy
 
 def load_checkpoint(session_path: str, state_type, device, model_name, session_id, checkpoint_id):
     session_path = session_path.replace(session_id, checkpoint_id)
@@ -263,21 +300,19 @@ def train(train_loader: DataLoader, test_loader: DataLoader, configs: dict, sess
 
             input_imgs = input_imgs.to(DEVICE)
 
-            output = model(input_imgs)
-            pred = torch.sigmoid(output)
-            
-            loss = loss_fn(output, pred)
-            
+            output = model(input_imgs)           # raw logits
+            labels = labels.to(DEVICE).float().unsqueeze(1)  # make shape [batch,1]
+            loss = loss_fn(output, labels)
             loss.backward()
             optim.step()
-            
+                        
             epoch_cummulative_loss += loss.item()
             steps+=1
         
         scheduler.step()
         avg_train_mse = epoch_cummulative_loss/steps
         #! PERHAPS YOU DON'T NEED TO COMPUTE TRAIN ACCURACY HERE
-        test_loss, test_accuracy, train_accuracy = compute_test_metrics(model, loss_fn, DEVICE, test_loader, 1)
+        test_loss, test_accuracy, train_accuracy = compute_test_metrics(model, loss_fn, DEVICE, test_loader, train_loader)
         logger.log(f"Average Train Loss = {avg_train_mse:.12f}")
         logger.log(f"Train Accuracy: {train_accuracy}")
         logger.log(f"Test Loss = {test_loss:.12f}")
