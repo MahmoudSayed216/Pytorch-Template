@@ -1,5 +1,5 @@
 model:
-  name: DeepDeblur
+  name: SIMPLE_CNN
   n_channels: 64
 
 training:

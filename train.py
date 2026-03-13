@@ -8,8 +8,8 @@ import torch
 from torch.utils.data import DataLoader
 import torchvision.transforms as T
 from torchvision.transforms import functional as F
-from .logger import Logger
-from .CheckpointsHandler import CheckpointsHandler
+from logger import Logger
+from CheckpointsHandler import CheckpointsHandler
 from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
