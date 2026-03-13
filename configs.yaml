@@ -3,14 +3,14 @@ model:
   n_channels: 64
 
 training:
-  learning_rate: 0.00005
+  learning_rate: 0.01
   patience: 5
   epochs: 600
-  batch_size: 2
+  batch_size: 32
   start_epoch: 1
   save_every: 3
   per_channel_mean: 0.5
-  reduce_lr_after: 200
+  reduce_lr_after: 50
   gamma: 0.1
 
 
