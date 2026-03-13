@@ -20,6 +20,7 @@ from sklearn.model_selection import train_test_split
 from dashboard.dashboard_reporter import DashboardReporter
 from dashboard.config import CLASS_NAMES          # {"0": "Cat", "1": "Dog"}
 import numpy as np
+import random
 
 
 def load_configs() -> tuple[dict, dict]:
@@ -198,6 +199,8 @@ def create_data_loaders(dataset_path: str, configs: dict) -> tuple[DataLoader, D
         test_samples += [(f, label_idx) for f in test_files]
 
     print(f"Train samples: {len(train_samples)}, Test samples: {len(test_samples)}")
+    random.shuffle(train_samples)
+    random.shuffle(test_samples)
 
     train_ds = CatDogDataset(train_samples ,transform=train_transforms)
     test_ds = CatDogDataset(test_samples, transform=test_transform)
