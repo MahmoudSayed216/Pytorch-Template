@@ -14,6 +14,9 @@ from torch.nn import BCEWithLogitsLoss
 from torch.optim import Adam
 from torch.optim.lr_scheduler import StepLR
 from Model.simple_cnn import SimpleCNN
+from torchvision import transforms
+from dataset.CatDogDataset import CatDogDataset
+from sklearn.model_selection import train_test_split
 
 def load_configs() -> tuple[dict, dict]:
     
@@ -164,18 +167,53 @@ def log_all_configs(logger, session_path, training_configs, shared_configs):
 
 
 #TODO: implement this function
-def create_data_loaders(dataset_path: str, training_configs: dict, configs: dict) -> tuple[DataLoader, DataLoader]:
-    # train_ds = GoProDataset(dataset_path, split="train", crops=True,transforms=augment_patch)
-    # test_ds = GoProDataset(dataset_path, split="test", crops=False, transforms=None)
+def create_data_loaders(dataset_path: str, configs: dict) -> tuple[DataLoader, DataLoader]:
 
-    # device = configs["device"]
-    
-    # train_loader = DataLoader(dataset=train_ds, num_workers=5, shuffle=True, batch_size=training_configs["training"]["batch_size"], pin_memory=(device == "cuda"))
-    # test_loader = DataLoader(dataset=test_ds, num_workers=5 , batch_size=1, pin_memory=(configs["device"] == "cuda"))
+    train_transforms = transforms.Compose([
+        transforms.Resize((224, 224)),              # Resize to 224x224
+        transforms.RandomHorizontalFlip(p=0.5),    # Randomly flip images
+        transforms.ColorJitter(brightness=0.2, contrast=0.2, saturation=0.2, hue=0.1), # Slight color jitter
+        transforms.ToTensor(),                      # Convert to tensor
+        transforms.Normalize(                       # Normalize using ImageNet stats
+            mean=[0.485, 0.456, 0.406],
+            std=[0.229, 0.224, 0.225]
+        )
+    ])
+        
+    test_transform = transforms.Compose([
+    transforms.Resize((224, 224)),
+    transforms.ToTensor(),
+    transforms.Normalize([0.485,0.456,0.406], [0.229,0.224,0.225])
+    ])
 
     
-    # return train_loader, test_loader
-    pass
+    labels_map = {"Cat": 0, "Dog": 1}
+
+    train_samples = []
+    test_samples = []
+
+    for label_name, label_idx in labels_map.items():
+        folder = os.path.join(dataset_path, label_name)
+        files = [os.path.join(folder, f) for f in os.listdir(folder) 
+                if f.lower().endswith(('.jpg', '.jpeg', '.png'))]
+        
+        train_files, test_files = train_test_split(files, test_size=0.2, random_state=42)
+        
+        train_samples += [(f, label_idx) for f in train_files]
+        test_samples += [(f, label_idx) for f in test_files]
+
+    print(f"Train samples: {len(train_samples)}, Test samples: {len(test_samples)}")
+
+    train_ds = CatDogDataset(train_samples ,transforms=train_transforms)
+    test_ds = CatDogDataset(test_samples, transforms=test_transform)
+
+    device = configs["device"]
+    
+    train_loader = DataLoader(dataset=train_ds, num_workers=5, shuffle=True, batch_size=configs["training"]["batch_size"], pin_memory=(device == "cuda"))
+    test_loader = DataLoader(dataset=test_ds, num_workers=5 , batch_size=1, pin_memory=(configs["device"] == "cuda"))
+
+    
+    return train_loader, test_loader
 
 
 

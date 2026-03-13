@@ -24,7 +24,7 @@ use_debugger: true
 environment:
   kaggle: true
   dataset_base:
-    kaggle: "/kaggle/input/a-curated-list-of-image-deblurring-datasets/DBlur/Gopro"
+    kaggle: "/kaggle/input/datasets/karakaggle/kaggle-cat-vs-dog-dataset/kagglecatsanddogs_3367a/PetImages"
     local: "/home/mahmoud-sayed/Desktop/Datasets/Gopro Dataset"
   output_dir:
     kaggle: "output"
