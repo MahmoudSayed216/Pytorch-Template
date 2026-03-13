@@ -262,30 +262,30 @@ def load_checkpoint(session_path: str, state_type, device, model_name, session_i
     return ckpt
 
 
-def _send_samples(model, test_loader, loss_fn, device, reporter, n=10):
+def _send_samples(model, test_loader, loss_fn, device, n=10):
     """Pick n random test images, run inference, send to dashboard."""
     model.eval()
     all_imgs, all_true, all_pred, all_conf = [], [], [], []
-
+ 
     with torch.no_grad():
         for imgs, labels in test_loader:
             imgs   = imgs.to(device)
             logits = model(imgs).squeeze(1)
             probs  = torch.sigmoid(logits).cpu().numpy()
             preds  = (probs >= 0.5).astype(int)
-
+ 
             for img_t, true_l, pred_l, conf in zip(imgs.cpu(), labels.numpy(), preds, probs):
                 # Convert tensor → numpy HWC uint8
                 img_np = img_t.permute(1, 2, 0).numpy()
-                img_np = ((img_np - img_np.min()) / (img_np.ptp() + 1e-8) * 255).astype(np.uint8)
+                img_np = ((img_np - img_np.min()) / (np.ptp(img_np) + 1e-8) * 255).astype(np.uint8)
                 all_imgs.append(img_np)
                 all_true.append(CLASS_NAMES[int(true_l)])
                 all_pred.append(CLASS_NAMES[int(pred_l)])
                 all_conf.append(float(conf))
-
+ 
             if len(all_imgs) >= n:
                 break
-
+ 
     # Shuffle and pick n random ones
     idx = np.random.choice(len(all_imgs), size=min(n, len(all_imgs)), replace=False)
     reporter.log_samples(
@@ -295,6 +295,7 @@ def _send_samples(model, test_loader, loss_fn, device, reporter, n=10):
         confidences=[all_conf[i] for i in idx],
     )
     model.train()
+ 
 
     
 #TODO: implement this function

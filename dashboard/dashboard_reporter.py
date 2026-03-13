@@ -23,8 +23,11 @@
 import base64
 import io
 import requests
+import urllib3
 import numpy as np
 from PIL import Image
+
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 class DashboardReporter:
@@ -47,7 +50,16 @@ class DashboardReporter:
 
     def _post(self, endpoint: str, payload: dict) -> None:
         try:
-            requests.post(f"{self.base}{endpoint}", json=payload, timeout=self.timeout)
+            requests.post(
+                f"{self.base}{endpoint}",
+                json=payload,
+                timeout=self.timeout,
+                headers={
+                    "Content-Type": "application/json",
+                    "ngrok-skip-browser-warning": "true",   # bypass ngrok interstitial page
+                },
+                verify=False,   # tolerate self-signed / unexpected EOF on free ngrok tunnels
+            )
         except Exception as e:
             print(f"[DashboardReporter] WARNING – could not reach {endpoint}: {e}")
 
