@@ -421,7 +421,7 @@ def main():
     # print(os.listdir(session_path))
     train_loader, test_loader = create_data_loaders(dataset_path, configs)
     
-    SERVER_URL = configs["SERVER_URL"]
+    SERVER_URL = configs["environment"]["SERVER_URL"]
     reporter = DashboardReporter(server_url=SERVER_URL)
 
 
