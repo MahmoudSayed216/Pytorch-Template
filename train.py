@@ -262,7 +262,7 @@ def load_checkpoint(session_path: str, state_type, device, model_name, session_i
     return ckpt
 
 
-def _send_samples(model, test_loader, loss_fn, device, n=10):
+def _send_samples(model, test_loader, loss_fn, device, reporter, n=10):
     """Pick n random test images, run inference, send to dashboard."""
     model.eval()
     all_imgs, all_true, all_pred, all_conf = [], [], [], []
