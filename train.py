@@ -423,8 +423,10 @@ def main():
     train_loader, test_loader = create_data_loaders(dataset_path, configs)
     
     SERVER_URL = configs["environment"]["SERVER_URL"]
-    reporter = DashboardReporter(server_url=SERVER_URL)
-
+    reporter = DashboardReporter(
+        server_url="https://xxxx.ngrok-free.app",
+        log_every_n_steps=10   # tune this
+    )
 
     train(train_loader = train_loader,test_loader =  test_loader, configs=configs, session_path=session_path, session_id=session_id,logger=logger, reporter=reporter)
 

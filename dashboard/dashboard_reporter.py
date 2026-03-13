@@ -6,11 +6,13 @@
 #
 #  Usage inside your training loop:
 #
-#      reporter = DashboardReporter(server_url="https://xxxx.ngrok-free.app")
+#      # log_every_n_steps=10 sends 1 request every 10 mini-batches
+#      reporter = DashboardReporter(server_url="https://xxxx.ngrok-free.app",
+#                                   log_every_n_steps=10)
 #      reporter.reset()                            # clear old data at run start
 #
 #      # inside mini-batch loop:
-#      reporter.log_step(loss=loss.item())
+#      reporter.log_step(loss=loss.item())         # internally throttled
 #
 #      # end of epoch:
 #      reporter.log_epoch(epoch, avg_train_loss, test_loss, train_acc, test_acc)
@@ -54,15 +56,23 @@ class DashboardReporter:
     All methods are fire-and-forget: failures are printed but never raise.
     """
 
-    def __init__(self, server_url: str, timeout: float = 3.0):
+    def __init__(self, server_url: str, timeout: float = 3.0, log_every_n_steps: int = 10):
         """
         Args:
-            server_url: Base URL of the ingest server, e.g.
-                        "https://xxxx.ngrok-free.app"  (no trailing slash)
-            timeout:    Seconds to wait for each request.
+            server_url:          Base URL of the ingest server, e.g.
+                                 "https://xxxx.ngrok-free.app"  (no trailing slash)
+            timeout:             Seconds to wait for each request.
+            log_every_n_steps:   Only send a step-loss request every N mini-batches.
+                                 Keeps you well within ngrok free tier's 20k req/month.
+                                 Example budgets (per training run):
+                                   N=1  -> steps_per_epoch x epochs  requests
+                                   N=10 -> 10x fewer step requests
+                                   N=50 -> very light, still smooth curve on dashboard
         """
         self.base = server_url.rstrip("/")
         self.timeout = timeout
+        self.log_every_n_steps = log_every_n_steps
+        self._step_counter = 0
 
         # Persistent session — reusing the connection is faster than opening
         # a new TCP+TLS handshake for every single mini-batch step
@@ -90,11 +100,17 @@ class DashboardReporter:
 
     def reset(self) -> None:
         """Clear all stored data on the server (call at the start of a run)."""
+        self._step_counter = 0
         self._post("/reset", {})
 
     def log_step(self, loss: float) -> None:
-        """Send per-mini-batch train loss."""
-        self._post("/log/step", {"loss": loss})
+        """
+        Send per-mini-batch train loss.
+        Internally throttled by log_every_n_steps to conserve ngrok request quota.
+        """
+        self._step_counter += 1
+        if self._step_counter % self.log_every_n_steps == 0:
+            self._post("/log/step", {"loss": loss})
 
     def log_epoch(
         self,
@@ -134,7 +150,7 @@ class DashboardReporter:
                 else:
                     continue
 
-                # Resize to 128×128 to keep payloads small
+                # Resize to 128x128 to keep payloads small
                 pil_img = pil_img.resize((128, 128), Image.BILINEAR)
                 buf = io.BytesIO()
                 pil_img.save(buf, format="JPEG", quality=75)
