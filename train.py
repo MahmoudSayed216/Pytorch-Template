@@ -138,32 +138,24 @@ def create_training_environment(output_relative_path: str) -> str:
 
     return session_path, session_id
 
-def log_all_configs(logger, session_path, training_configs, shared_configs):
-    key_val_pairs =  []
+def log_configs(logger, session_path, configs):
+    key_val_pairs = []
+
     def traverse_dict(d, parent_key=""):
         for key, value in d.items():
             full_key = f"{parent_key}-{key}" if parent_key else str(key)
-
             if isinstance(value, dict):
                 traverse_dict(value, full_key)
             else:
                 key_val_pairs.append(f"{full_key}: {value}")
 
-    traverse_dict(training_configs)
+    traverse_dict(configs)
     output = "\n".join(key_val_pairs)
-    output = "\ntrain configs: "+"\n" + output
-    logger.log(output)
-    key_val_pairs.clear()
-
-    traverse_dict(shared_configs)
-    output = "\n".join(key_val_pairs)
-    output = "\nshared configs: "+"\n" + output
+    output = "\nconfigs:\n" + output
     logger.log(output)
     key_val_pairs.clear()
 
     logger.log("session path: ", session_path, end="\n\n")
-
-    # print(output)
 
 
 #TODO: implement this function
@@ -231,28 +223,28 @@ def load_checkpoint(session_path: str, state_type, device, model_name, session_i
 
     
 #TODO: implement this function
-def train(train_loader: DataLoader, test_loader: DataLoader, training_configs: dict, shared_configs: dict, session_path: str, session_id: str, logger: Logger):
-    EPOCHS = training_configs["training"]["epochs"]
-    LEARNING_RATE = training_configs["training"]["learning_rate"]
-    SAVE_EVERY = training_configs["training"]["save_every"]
+def train(train_loader: DataLoader, test_loader: DataLoader, configs: dict, session_path: str, session_id: str, logger: Logger):
+    EPOCHS = configs["training"]["epochs"]
+    LEARNING_RATE = configs["training"]["learning_rate"]
+    SAVE_EVERY = configs["training"]["save_every"]
     START_EPOCH = 0
-    DEVICE = shared_configs["device"]
-    MODEL_NAME = training_configs["model"]["name"]
-    LR_REDUCTION_FACTOR = training_configs["training"]["gamma"]
-    LR_REDUCE_AFTER = training_configs["training"]["reduce_lr_after"]
+    DEVICE = configs["device"]
+    MODEL_NAME = configs["model"]["name"]
+    LR_REDUCTION_FACTOR = configs["training"]["gamma"]
+    LR_REDUCE_AFTER = configs["training"]["reduce_lr_after"]
     weights_saving_path = os.path.join(session_path, "weights")
 
 
     cp_handler = CheckpointsHandler(save_every=SAVE_EVERY, increasing_metric=True, output_path=weights_saving_path)
-    model = SimpleCNN(train_configs=training_configs, shared_configs=shared_configs).to(DEVICE)
+    model = SimpleCNN(train_configs=configs, shared_configs=configs).to(DEVICE)
     optim = Adam(params=model.parameters(), lr=LEARNING_RATE)
     scheduler = StepLR(optimizer=optim, step_size=LR_REDUCE_AFTER, gamma=LR_REDUCTION_FACTOR)
     loss_fn = BCEWithLogitsLoss()
     logger.debug(string=f"Session path: {session_path}")
 
-    if training_configs["checkpoint"]["continue"]:
-        checkpoint_type = training_configs["checkpoint"]["type"]
-        checkpoint = load_checkpoint(session_path, checkpoint_type, DEVICE, model_name=training_configs["model"]["name"], session_id=session_id, checkpoint_id=training_configs["checkpoint"]["id"])
+    if configs["checkpoint"]["continue"]:
+        checkpoint_type = configs["checkpoint"]["type"]
+        checkpoint = load_checkpoint(session_path, checkpoint_type, DEVICE, model_name=configs["model"]["name"], session_id=session_id, checkpoint_id=configs["checkpoint"]["id"])
         model.load_state_dict(checkpoint["model"])
         cp_handler.previous_best_value = checkpoint["score"]
         optim.load_state_dict(checkpoint["optim"])
@@ -318,26 +310,26 @@ def train(train_loader: DataLoader, test_loader: DataLoader, training_configs: d
 
 
 def main():
-    training_configs, shared_configs = load_configs()
+    configs = load_configs()
     args = parse_args()
     
     if len(sys.argv) > 1:
-        override_configs(training_configs, shared_configs, args)
+        override_configs(configs, args)
 
-    dataset_path, output_path = resolve_paths(shared_configs)
+    dataset_path, output_path = resolve_paths(configs)
     
     session_path, session_id = create_training_environment(output_path)
 
-    logger = Logger(debug_mode=shared_configs["environment"]["debugger_active"], logs_folder_path=os.path.join(session_path, "logs"))
+    logger = Logger(debug_mode=configs["environment"]["debugger_active"], logs_folder_path=os.path.join(session_path, "logs"))
 
 
 
     #TODO: LOG ALL CONFIGS AND SESSION PATH BEFORE STARTING
-    log_all_configs(logger=logger, session_path=session_path, training_configs=training_configs, shared_configs=shared_configs)
+    log_configs(logger=logger, session_path=session_path, configs=configs)
     # print(os.listdir(session_path))
-    train_loader, test_loader = create_data_loaders(dataset_path, training_configs, shared_configs)
+    train_loader, test_loader = create_data_loaders(dataset_path, configs)
 
-    train(train_loader = train_loader,test_loader =  test_loader, training_configs=training_configs, shared_configs=shared_configs, session_path=session_path, session_id=session_id,logger=logger)
+    train(train_loader = train_loader,test_loader =  test_loader, configs=configs, session_path=session_path, session_id=session_id,logger=logger)
 
 
 if __name__ == "__main__":
