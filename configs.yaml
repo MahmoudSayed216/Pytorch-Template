@@ -5,7 +5,7 @@ model:
 training:
   learning_rate: 0.01
   patience: 5
-  epochs: 600
+  epochs: 250
   batch_size: 32
   start_epoch: 1
   save_every: 3
