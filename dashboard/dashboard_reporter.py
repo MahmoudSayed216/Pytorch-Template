@@ -22,12 +22,30 @@
 
 import base64
 import io
+import ssl
 import requests
 import urllib3
+from requests.adapters import HTTPAdapter
+from urllib3.util.ssl_ import create_urllib3_context
 import numpy as np
 from PIL import Image
 
 urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
+
+class _LenientSSLAdapter(HTTPAdapter):
+    """
+    Custom HTTPAdapter with a permissive SSL context.
+    Fixes SSLEOFError on Kaggle when posting to ngrok free tunnels —
+    caused by Kaggle's outbound TLS stack dropping the connection mid-handshake.
+    """
+    def init_poolmanager(self, *args, **kwargs):
+        ctx = create_urllib3_context()
+        ctx.check_hostname = False
+        ctx.verify_mode = ssl.CERT_NONE
+        ctx.set_ciphers("DEFAULT@SECLEVEL=1")
+        kwargs["ssl_context"] = ctx
+        super().init_poolmanager(*args, **kwargs)
 
 
 class DashboardReporter:
@@ -46,19 +64,24 @@ class DashboardReporter:
         self.base = server_url.rstrip("/")
         self.timeout = timeout
 
+        # Persistent session — reusing the connection is faster than opening
+        # a new TCP+TLS handshake for every single mini-batch step
+        self._session = requests.Session()
+        self._session.mount("https://", _LenientSSLAdapter())
+        self._session.headers.update({
+            "Content-Type": "application/json",
+            "ngrok-skip-browser-warning": "true",
+        })
+
     # ── Internal ──────────────────────────────────────────────────────────────
 
     def _post(self, endpoint: str, payload: dict) -> None:
         try:
-            requests.post(
+            self._session.post(
                 f"{self.base}{endpoint}",
                 json=payload,
                 timeout=self.timeout,
-                headers={
-                    "Content-Type": "application/json",
-                    "ngrok-skip-browser-warning": "true",   # bypass ngrok interstitial page
-                },
-                verify=False,   # tolerate self-signed / unexpected EOF on free ngrok tunnels
+                verify=False,
             )
         except Exception as e:
             print(f"[DashboardReporter] WARNING – could not reach {endpoint}: {e}")
