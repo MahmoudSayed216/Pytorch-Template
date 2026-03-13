@@ -32,8 +32,10 @@ environment:
   debugger_active: true
   dashboard: true
   ngrok_auth_token: "3AtbqRbtKoMcQHExzTMLaA7dTCr_Sb8BJEALNzYfmQiDnpwJ"
+  SERVER_URL: "https://unabasing-kathlyn-derisively.ngrok-free.dev"
 
 device: cuda
+
 
 
 user_configs:
