@@ -338,12 +338,12 @@ def train(train_loader: DataLoader, test_loader: DataLoader, configs: dict,
     reporter.reset()
     
     reporter.log_configs({
-    "model":    configs["model"],
-    "training": configs["training"],
-    "device":   configs["device"],
-    "environment": {
-        "kaggle": configs["environment"]["kaggle"],
-    },
+        "model":    configs["model"],
+        "training": configs["training"],
+        "device":   configs["device"],
+        "environment": {
+            "kaggle": configs["environment"]["kaggle"],
+        },
     })
 
     logger.log(f"Training {MODEL_NAME} starting for {EPOCHS-START_EPOCH} epochs, "
