@@ -112,22 +112,18 @@ class DashboardReporter:
         if self._step_counter % self.log_every_n_steps == 1:
             self._post("/log/step", {"loss": loss})
 
-    def log_epoch(
-        self,
-        epoch: int,
-        avg_train_loss: float,
-        test_loss: float,
-        train_acc: float,
-        test_acc: float,
-    ) -> None:
-        """Send all per-epoch metrics."""
-        self._post("/log/epoch", {
+    def log_epoch(self, epoch, avg_train_loss, test_loss,
+              train_acc, test_acc, learning_rate=None) -> None:
+        payload = {
             "epoch":          epoch,
             "avg_train_loss": avg_train_loss,
             "test_loss":      test_loss,
             "train_acc":      train_acc,
             "test_acc":       test_acc,
-        })
+        }
+        if learning_rate is not None:
+            payload["learning_rate"] = learning_rate
+        self._post("/log/epoch", payload)
 
     def log_samples(
         self,
