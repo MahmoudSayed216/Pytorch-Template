@@ -427,8 +427,8 @@ def main():
     
     SERVER_URL = configs["environment"]["SERVER_URL"]
     reporter = DashboardReporter(
-        server_url="https://xxxx.ngrok-free.app",
-        log_every_n_steps=15   # tune this
+        server_url="https://unabasing-kathlyn-derisively.ngrok-free.dev",
+        log_every_n_steps=5   # tune this
     )
 
     train(train_loader = train_loader,test_loader =  test_loader, configs=configs, session_path=session_path, session_id=session_id,logger=logger, reporter=reporter)
