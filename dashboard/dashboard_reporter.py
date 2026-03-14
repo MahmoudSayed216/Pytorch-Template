@@ -109,7 +109,7 @@ class DashboardReporter:
         Internally throttled by log_every_n_steps to conserve ngrok request quota.
         """
         self._step_counter += 1
-        if self._step_counter % self.log_every_n_steps == 0:
+        if self._step_counter % self.log_every_n_steps == 1:
             self._post("/log/step", {"loss": loss})
 
     def log_epoch(
@@ -167,3 +167,11 @@ class DashboardReporter:
 
         if samples:
             self._post("/log/samples", {"samples": samples})
+
+    def log_configs(self, configs: dict) -> None:
+        """
+        Send filtered training configs to the dashboard.
+        Call this once before the training loop starts (after reset()).
+        Pass only the keys you want displayed — omit secrets like tokens and URLs.
+        """
+        self._post("/log/configs", {"configs": configs})

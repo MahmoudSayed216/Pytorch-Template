@@ -336,6 +336,15 @@ def train(train_loader: DataLoader, test_loader: DataLoader, configs: dict,
 
     # ── Tell dashboard we're starting fresh ────────────────────────────────────
     reporter.reset()
+    
+    reporter.log_configs({
+    "model":    configs["model"],
+    "training": configs["training"],
+    "device":   configs["device"],
+    "environment": {
+        "kaggle": configs["environment"]["kaggle"],
+    },
+    })
 
     logger.log(f"Training {MODEL_NAME} starting for {EPOCHS-START_EPOCH} epochs, "
                f"Learning rate = {LEARNING_RATE}, with Adam optimizer")
@@ -380,6 +389,8 @@ def train(train_loader: DataLoader, test_loader: DataLoader, configs: dict,
             test_loss=test_loss,
             train_acc=train_accuracy,
             test_acc=test_accuracy,
+            learning_rate=scheduler.get_last_lr()[0]
+
         )
 
         # ── [DASHBOARD] send sample predictions ──────────────────────────────
