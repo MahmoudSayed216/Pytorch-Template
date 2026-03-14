@@ -109,7 +109,7 @@ class DashboardReporter:
         Internally throttled by log_every_n_steps to conserve ngrok request quota.
         """
         self._step_counter += 1
-        if self._step_counter % self.log_every_n_steps == 0:
+        if self._step_counter % self.log_every_n_steps == 1:
             self._post("/log/step", {"loss": loss})
 
     def log_epoch(
